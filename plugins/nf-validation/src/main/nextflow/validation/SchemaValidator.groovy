@@ -106,7 +106,7 @@ class SchemaValidator extends PluginExtensionPoint {
     //
     // Resolve Schema path relative to main workflow directory
     //
-    public static String getSchemaPath(baseDir, schema_filename='nextflow_schema.json') {
+    static String getSchemaPath(baseDir, schema_filename='nextflow_schema.json') {
         return "${baseDir}/${schema_filename}"
     }
 
@@ -114,7 +114,7 @@ class SchemaValidator extends PluginExtensionPoint {
     * Function to loop over all parameters defined in schema and check
     * whether the given parameters adhere to the specifications
     */
-    public void validateParameters(Map params, String schema_filename='nextflow_schema.json') {
+    void validateParameters(Map params, String schema_filename='nextflow_schema.json') {
 
         // Clean the parameters
         def cleanedParams = cleanParameters(params)
@@ -196,10 +196,10 @@ class SchemaValidator extends PluginExtensionPoint {
     //
     // Beautify parameters for --help
     //
-    @nextflow.plugin.extension.Function
-    public String paramsHelp(String baseDir, Map params, String command, String schema_filename='nextflow_schema.json') {
+    @Function
+    String paramsHelp(String baseDir, Map params, String command, String schema_filename='nextflow_schema.json') {
         def Boolean monochrome_logs = params.monochrome_logs
-        Map<String,String> colors = logColours(monochrome_logs)
+        def colors = logColours(monochrome_logs)
         Integer num_hidden = 0
         String output  = ''
         output        += 'Typical pipeline command:\n\n'
@@ -210,7 +210,7 @@ class SchemaValidator extends PluginExtensionPoint {
         Integer dec_linewidth = 160 - desc_indent
         for (group in params_map.keySet()) {
             Integer num_params = 0
-            String group_output = colors.underlined + colors.bold + group + colors.reset + '\n'
+            String group_output = "$colors.underlined$colors.bold$group$colors.reset\n"
             def Map group_params = params_map.get(group)  // This gets the parameters of that particular group
             for (String param in group_params.keySet()) {
                 def Map get_param = group_params.get(param)
@@ -247,7 +247,7 @@ class SchemaValidator extends PluginExtensionPoint {
             }
         }
         if (num_hidden > 0){
-            output += colors.dim + "!! Hiding $num_hidden params, use --show_hidden_params to show them !!\n" + colors.reset
+            output += "$colors.dim !! Hiding $num_hidden params, use --show_hidden_params to show them !!\n $colors.reset"
         }
         output += "-${colors.dim}----------------------------------------------------${colors.reset}-"
         return output
@@ -256,8 +256,8 @@ class SchemaValidator extends PluginExtensionPoint {
     //
     // Groovy Map summarising parameters/workflow options used by the pipeline
     //
-    @nextflow.plugin.extension.Function
-    public LinkedHashMap paramsSummaryMap(Map workflow, String baseDir, Map params, String schema_filename='nextflow_schema.json') {
+    @Function
+    LinkedHashMap paramsSummaryMap(Map workflow, String baseDir, Map params, String schema_filename='nextflow_schema.json') {
         // Get a selection of core Nextflow workflow options
         def Map workflow_summary = [:]
         if (workflow.revision) {
@@ -327,17 +327,17 @@ class SchemaValidator extends PluginExtensionPoint {
     //
     // Beautify parameters for summary and return as string
     //
-    @nextflow.plugin.extension.Function
-    public String paramsSummaryLog(Map workflow, String baseDir, Map params) {
+    @Function
+    String paramsSummaryLog(Map workflow, String baseDir, Map params) {
         def Boolean monochrome_logs = params.monochrome_logs
-        Map<String,String> colors = logColours(monochrome_logs)
+        def colors = logColours(monochrome_logs)
         String output  = ''
         def params_map = paramsSummaryMap(workflow, baseDir, params)
         def max_chars  = paramsMaxChars(params_map)
         for (group in params_map.keySet()) {
             def Map group_params = params_map.get(group)  // This gets the parameters of that particular group
             if (group_params) {
-                output += colors.bold + group + colors.reset + '\n'
+                output += "$colors.bold$group$colors.reset\n"
                 for (String param in group_params.keySet()) {
                     output += "  " + colors.blue + param.padRight(max_chars) + ": " + colors.green +  group_params.get(param) + colors.reset + '\n'
                 }
@@ -353,9 +353,9 @@ class SchemaValidator extends PluginExtensionPoint {
     // Loop over nested exceptions and print the causingException
     //
     private void collectErrors(JSONObject exJSON, JSONObject paramsJSON, Map enums, Integer limit=5) {
-        def JSONObject causingExceptions = (JSONObject) exJSON['causingExceptions']
-        if (causingExceptions.length() == 0) {
-            def Matcher m = (Matcher) exJSON['message'] =~ /required key \[([^\]]+)\] not found/
+        def Iterable causingExceptions = (Iterable) exJSON['causingExceptions']
+        if (causingExceptions.size() == 0) {
+            def Matcher m = (Matcher) (exJSON['message'] =~ /required key \[([^\]]+)\] not found/)
             // Missing required param
             if(m.matches()){
                 def List l = m[0] as ArrayList
